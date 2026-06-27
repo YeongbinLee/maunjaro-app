@@ -93,6 +93,17 @@ select.inp{-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Cs
 .user-info{background:var(--primary-light);border-radius:10px;padding:10px 12px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;}
 .user-email{font-size:12px;color:var(--primary);font-weight:600;}
 
+/* ══ TODAY CHECKLIST BAR ══ */
+.today-bar{background:white;border-bottom:1px solid var(--border);padding:10px 14px;}
+.today-bar-title{font-size:10px;font-weight:700;color:var(--text-sub);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;}
+.today-items{display:flex;gap:6px;flex-wrap:wrap;}
+.today-item{display:flex;align-items:center;gap:5px;padding:5px 10px;border-radius:20px;font-size:12px;font-weight:600;border:1.5px solid var(--border);background:white;cursor:pointer;transition:all .15s;}
+.today-item.done{background:var(--green-light);border-color:var(--green);color:#15803d;}
+.today-item.inj-done{background:#eff6ff;border-color:#93c5fd;color:#1e40af;}
+.today-item.inj-pending{background:#fef9c3;border-color:#fde68a;color:#92400e;}
+.today-item .ti-icon{font-size:14px;}
+.today-item .ti-check{font-size:11px;}
+
 /* ══ DAY DETAIL VIEW ══ */
 #v-day{position:fixed;inset:0;transform:translateX(100%);transition:transform .28s cubic-bezier(.25,.46,.45,.94);background:var(--bg);overflow-y:auto;z-index:200;padding-bottom:50px;}
 #v-day.open{transform:translateX(0);}
@@ -327,6 +338,13 @@ textarea.inp{resize:vertical;min-height:72px;font-size:13px;line-height:1.5;}
     </div>
   </div>
 
+  <!-- 오늘의 체크리스트 바 -->
+  <div class="today-bar">
+    <div class="today-bar-title">오늘의 체크리스트</div>
+    <div class="today-items" id="today-items"></div>
+  </div>
+
+  <!-- 투약 일정 바 (유지) -->
   <div class="inj-bar">
     <div class="inj-bar-left">
       <div class="lbl">투약 일정</div>
@@ -1058,6 +1076,7 @@ function showCalendar(){
   updateDplus();
   loadWeightInputs();
   renderWeightSummary();
+  renderTodayChecklist();
   setTimeout(()=>renderGraph(currentGraphType), 50);
 }
 
@@ -1121,6 +1140,36 @@ window.nextMonth = function(){if(++calMonth>11){calMonth=0;calYear++;}renderCale
 // ══════════════════════════════════════════════════════
 // INJ BAR + D+ BADGE
 // ══════════════════════════════════════════════════════
+function renderTodayChecklist(){
+  const el = document.getElementById('today-items');
+  if(!el) return;
+  const items = [];
+
+  // 접종일이면 맨 앞에 접종 여부
+  if(isInjDay(todayKey)){
+    const logged = injLogForDate(todayKey);
+    if(logged){
+      items.push(`<div class="today-item inj-done"><span class="ti-icon">💉</span>접종 완료<span class="ti-check">✓</span></div>`);
+    } else {
+      items.push(`<div class="today-item inj-pending" onclick="openDay(todayKey)"><span class="ti-icon">💉</span>오늘 접종일</div>`);
+    }
+  }
+
+  // 4개 카테고리 달성 여부
+  CAT_KEYS.forEach(k=>{
+    const done  = catComp(todayKey, k);
+    const total = CATS[k].items.length;
+    const full  = done === total;
+    const label = CATS[k].label;
+    const icon  = CATS[k].icon;
+    const cls   = full ? 'today-item done' : 'today-item';
+    const check = full ? '<span class="ti-check">✓</span>' : `<span class="ti-check" style="color:var(--text-sub);font-size:10px;">${done}/${total}</span>`;
+    items.push(`<div class="${cls}" onclick="openDay(todayKey)"><span class="ti-icon">${icon}</span>${label}${check}</div>`);
+  });
+
+  el.innerHTML = items.join('');
+}
+
 function updateInjBar(){
   const el=document.getElementById('inj-status');
   const cnt=db.inj.logs.length;
@@ -1178,7 +1227,7 @@ function openDay(key){
 }
 window.backToCalendar = function(){
   document.getElementById('v-day').classList.remove('open');
-  renderCalendar();updateInjBar();
+  renderCalendar();updateInjBar();renderTodayChecklist();
 };
 function renderDay(key){
   const isToday=key===todayKey;

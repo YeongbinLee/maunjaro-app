@@ -1125,7 +1125,11 @@ onAuthStateChanged(auth, async (user)=>{
     document.getElementById('v-cal').style.display='none';
     document.getElementById('v-ob').style.display='none';
 
-    await loadFromFirestore();
+    try {
+      await loadFromFirestore();
+    } catch(e){
+      console.error('Firestore 로딩 오류:', e);
+    }
 
     const today=new Date();
     document.getElementById('hdr-date').textContent=today.getFullYear()+'년 '+(today.getMonth()+1)+'월 '+today.getDate()+'일 ('+DOWS[today.getDay()]+')';

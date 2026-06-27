@@ -187,15 +187,46 @@ textarea.inp{resize:vertical;min-height:72px;font-size:13px;line-height:1.5;}
 /* ══ BODY SECTION (메인 카드) ══ */
 .body-section{background:white;border-radius:14px;margin:12px 14px 0;padding:14px;box-shadow:0 1px 4px rgba(0,0,0,.06);}
 .body-section-title{font-size:13px;font-weight:700;color:var(--text);margin-bottom:12px;display:flex;align-items:center;gap:6px;}
-.weight-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;}
+.weight-top-row{display:flex;gap:10px;align-items:stretch;}
+.weight-input-col{flex:1;min-width:0;}
+.weight-summary-card{width:130px;flex-shrink:0;background:var(--primary-light);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column;justify-content:space-between;position:relative;}
+.weight-summary-lbl{font-size:10px;font-weight:700;color:var(--primary);opacity:.8;margin-bottom:2px;}
+.weight-summary-val{font-size:28px;font-weight:800;color:var(--primary);line-height:1;}
+.weight-summary-unit{font-size:12px;font-weight:600;color:var(--primary);opacity:.7;}
+.weight-summary-diff{font-size:11px;font-weight:700;margin-top:4px;}
+.weight-summary-diff.down{color:var(--green);}
+.weight-summary-diff.up{color:var(--red);}
+.weight-summary-diff.same{color:var(--text-sub);}
+.weight-summary-empty{font-size:11px;color:var(--primary);opacity:.7;line-height:1.4;}
+.weight-cal-btn{position:absolute;top:8px;right:8px;width:22px;height:22px;border-radius:50%;background:var(--primary);color:white;border:none;font-size:14px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;font-weight:700;}
 .weight-field label{font-size:11px;color:var(--text-sub);font-weight:600;display:block;margin-bottom:4px;}
 .weight-inp-row{display:flex;align-items:center;gap:4px;}
 .weight-inp-row input{flex:1;border:1.5px solid var(--border);border-radius:8px;padding:8px 10px;font-size:14px;font-weight:600;outline:none;color:var(--text);background:white;width:100%;}
 .weight-inp-row input:focus{border-color:var(--primary);}
 .weight-inp-row span{font-size:12px;color:var(--text-sub);flex-shrink:0;}
-.weight-save-btn{width:100%;padding:10px;background:var(--primary);color:white;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;margin-top:4px;}
+.weight-save-btn{width:100%;padding:10px;background:var(--primary);color:white;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;margin-top:8px;}
 .weight-save-btn:active{opacity:.85;}
 .inbody-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;}
+
+/* ══ WEIGHT CALENDAR MODAL ══ */
+#v-wcal{position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.45);display:none;align-items:flex-end;justify-content:center;}
+#v-wcal.open{display:flex;}
+.wcal-sheet{background:white;border-radius:20px 20px 0 0;width:100%;max-width:480px;padding:20px 16px 32px;}
+.wcal-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+.wcal-hdr h3{font-size:16px;font-weight:700;}
+.wcal-close{width:30px;height:30px;border:none;background:var(--bg);border-radius:50%;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--text-sub);}
+.wcal-month-nav{display:flex;align-items:center;justify-content:center;gap:16px;margin-bottom:10px;}
+.wcal-month-nav button{width:30px;height:30px;border:none;background:var(--bg);border-radius:8px;font-size:15px;cursor:pointer;}
+.wcal-month-label{font-size:14px;font-weight:700;min-width:100px;text-align:center;}
+.wcal-dow{display:grid;grid-template-columns:repeat(7,1fr);margin-bottom:4px;}
+.wcal-dow span{text-align:center;font-size:10px;font-weight:600;color:var(--text-sub);padding:2px 0;}
+.wcal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;}
+.wcal-cell{display:flex;flex-direction:column;align-items:center;padding:4px 2px;border-radius:8px;cursor:pointer;min-height:44px;}
+.wcal-cell:active{background:var(--bg);}
+.wcal-cell.other-m{opacity:.3;pointer-events:none;}
+.wcal-cell.is-today .wcal-num{background:var(--blue);color:white;}
+.wcal-num{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:500;}
+.wcal-w{font-size:10px;font-weight:700;color:var(--primary);margin-top:1px;}
 
 /* ══ GRAPH ══ */
 .graph-section{background:white;border-radius:14px;margin:12px 14px 0;padding:14px;box-shadow:0 1px 4px rgba(0,0,0,.06);}
@@ -342,40 +373,71 @@ textarea.inp{resize:vertical;min-height:72px;font-size:13px;line-height:1.5;}
   <!-- 체중 입력 -->
   <div class="body-section">
     <div class="body-section-title">⚖️ 오늘 체중 기록</div>
-    <div class="weight-grid">
-      <div class="weight-field">
-        <label>일반 체중</label>
-        <div class="weight-inp-row">
-          <input type="number" id="w-general" placeholder="0.0" step="0.1" min="0" max="300">
-          <span>kg</span>
+    <div class="weight-top-row">
+      <!-- 입력 영역 -->
+      <div class="weight-input-col">
+        <div class="weight-field" style="margin-bottom:8px;">
+          <label>일반 체중</label>
+          <div class="weight-inp-row">
+            <input type="number" id="w-general" placeholder="0.0" step="0.1" min="0" max="300">
+            <span>kg</span>
+          </div>
+        </div>
+        <div class="body-section-title" style="font-size:12px;margin-bottom:6px;">📊 인바디 (선택)</div>
+        <div class="inbody-grid">
+          <div class="weight-field">
+            <label>체중</label>
+            <div class="weight-inp-row">
+              <input type="number" id="w-inbody" placeholder="0.0" step="0.1" min="0" max="300">
+              <span>kg</span>
+            </div>
+          </div>
+          <div class="weight-field">
+            <label>골격근량</label>
+            <div class="weight-inp-row">
+              <input type="number" id="w-muscle" placeholder="0.0" step="0.1" min="0" max="200">
+              <span>kg</span>
+            </div>
+          </div>
+          <div class="weight-field">
+            <label>체지방량</label>
+            <div class="weight-inp-row">
+              <input type="number" id="w-fat" placeholder="0.0" step="0.1" min="0" max="200">
+              <span>kg</span>
+            </div>
+          </div>
+        </div>
+        <button class="weight-save-btn" onclick="saveWeightToday()">저장</button>
+      </div>
+      <!-- 요약 카드 -->
+      <div class="weight-summary-card" id="weight-summary">
+        <button class="weight-cal-btn" onclick="openWeightCal()">+</button>
+        <div>
+          <div class="weight-summary-lbl">최근 체중</div>
+          <div class="weight-summary-empty">체중을<br>입력해주세요</div>
         </div>
       </div>
     </div>
-    <div class="body-section-title" style="margin-top:10px;margin-bottom:8px;">📊 인바디 (선택)</div>
-    <div class="inbody-grid">
-      <div class="weight-field">
-        <label>체중</label>
-        <div class="weight-inp-row">
-          <input type="number" id="w-inbody" placeholder="0.0" step="0.1" min="0" max="300">
-          <span>kg</span>
-        </div>
+  </div>
+
+  <!-- 체중 달력 모달 -->
+  <div id="v-wcal" onclick="wcalBgClick(event)">
+    <div class="wcal-sheet">
+      <div class="wcal-hdr">
+        <h3>📅 체중 기록 달력</h3>
+        <button class="wcal-close" onclick="closeWeightCal()">×</button>
       </div>
-      <div class="weight-field">
-        <label>골격근량</label>
-        <div class="weight-inp-row">
-          <input type="number" id="w-muscle" placeholder="0.0" step="0.1" min="0" max="200">
-          <span>kg</span>
-        </div>
+      <div class="wcal-month-nav">
+        <button onclick="wcalPrev()">‹</button>
+        <span class="wcal-month-label" id="wcal-month-label"></span>
+        <button onclick="wcalNext()">›</button>
       </div>
-      <div class="weight-field">
-        <label>체지방량</label>
-        <div class="weight-inp-row">
-          <input type="number" id="w-fat" placeholder="0.0" step="0.1" min="0" max="200">
-          <span>kg</span>
-        </div>
+      <div class="wcal-dow">
+        <span style="color:#ef4444">일</span><span>월</span><span>화</span>
+        <span>수</span><span>목</span><span>금</span><span style="color:#3b82f6">토</span>
       </div>
+      <div class="wcal-grid" id="wcal-grid"></div>
     </div>
-    <button class="weight-save-btn" onclick="saveWeightToday()">저장</button>
   </div>
 
   <!-- 신체변화 그래프 -->
@@ -759,10 +821,10 @@ window.saveWeightToday = function(){
   ensureDay(todayKey);
   db.days[todayKey].weight = { general, inbody, muscle, fat };
   save();
+  renderWeightSummary();
   renderGraph(currentGraphType);
-  // 저장 피드백
-  const btn = document.getElementById('w-save-feedback');
-  if(btn){ btn.textContent='✅ 저장됨'; setTimeout(()=>{ btn.textContent='저장'; },1500); }
+  const btn = document.querySelector('.weight-save-btn');
+  if(btn){ const orig=btn.textContent; btn.textContent='✅ 저장됨'; setTimeout(()=>{ btn.textContent=orig; },1500); }
 };
 
 function loadWeightInputs(){
@@ -772,6 +834,103 @@ function loadWeightInputs(){
   document.getElementById('w-inbody').value  = w.inbody  || '';
   document.getElementById('w-muscle').value  = w.muscle  || '';
   document.getElementById('w-fat').value     = w.fat     || '';
+}
+
+function renderWeightSummary(){
+  const card = document.getElementById('weight-summary');
+  if(!card) return;
+
+  // 일반 체중 기록이 있는 날짜들을 날짜순 정렬
+  const entries = Object.entries(db.days)
+    .filter(([,d])=> d.weight && d.weight.general !== '' && d.weight.general != null)
+    .map(([key,d])=>({ key, val: parseFloat(d.weight.general) }))
+    .filter(e=>!isNaN(e.val))
+    .sort((a,b)=>a.key.localeCompare(b.key));
+
+  const btnHtml = `<button class="weight-cal-btn" onclick="openWeightCal()">+</button>`;
+
+  if(entries.length === 0){
+    card.innerHTML = `${btnHtml}
+      <div>
+        <div class="weight-summary-lbl">최근 체중</div>
+        <div class="weight-summary-empty">체중을<br>입력해주세요</div>
+      </div>`;
+    return;
+  }
+
+  const latest = entries[entries.length-1];
+  const prev   = entries.length >= 2 ? entries[entries.length-2] : null;
+  const diff   = prev ? (latest.val - prev.val) : null;
+
+  let diffHtml = '';
+  if(diff !== null){
+    const sign = diff > 0 ? '+' : '';
+    const cls  = diff < 0 ? 'down' : diff > 0 ? 'up' : 'same';
+    diffHtml = `<div class="weight-summary-diff ${cls}">${sign}${diff.toFixed(1)} kg</div>`;
+  }
+
+  card.innerHTML = `${btnHtml}
+    <div>
+      <div class="weight-summary-lbl">최근 체중</div>
+      <div style="display:flex;align-items:baseline;gap:3px;">
+        <div class="weight-summary-val">${latest.val.toFixed(1)}</div>
+        <div class="weight-summary-unit">kg</div>
+      </div>
+      ${diffHtml}
+      <div style="font-size:9px;color:var(--primary);opacity:.6;margin-top:3px;">${latest.key}</div>
+    </div>`;
+}
+
+// ── 체중 달력 모달 ──
+let wcalYear = new Date().getFullYear();
+let wcalMonth = new Date().getMonth();
+
+window.openWeightCal = function(){
+  wcalYear = new Date().getFullYear();
+  wcalMonth = new Date().getMonth();
+  renderWcal();
+  document.getElementById('v-wcal').classList.add('open');
+};
+window.closeWeightCal = function(){
+  document.getElementById('v-wcal').classList.remove('open');
+};
+window.wcalBgClick = function(e){
+  if(e.target === document.getElementById('v-wcal')) closeWeightCal();
+};
+window.wcalPrev = function(){ if(--wcalMonth < 0){wcalMonth=11;wcalYear--;} renderWcal(); };
+window.wcalNext = function(){ if(++wcalMonth > 11){wcalMonth=0;wcalYear++;} renderWcal(); };
+
+function renderWcal(){
+  document.getElementById('wcal-month-label').textContent = wcalYear+'년 '+(wcalMonth+1)+'월';
+  const grid = document.getElementById('wcal-grid');
+  grid.innerHTML = '';
+  const first = new Date(wcalYear, wcalMonth, 1);
+  const last  = new Date(wcalYear, wcalMonth+1, 0);
+  const startDow = first.getDay();
+  const prevLast = new Date(wcalYear, wcalMonth, 0);
+
+  for(let i=startDow-1;i>=0;i--){
+    const c=document.createElement('div'); c.className='wcal-cell other-m';
+    c.innerHTML=`<div class="wcal-num" style="color:#ccc">${prevLast.getDate()-i}</div>`;
+    grid.appendChild(c);
+  }
+  for(let d=1;d<=last.getDate();d++){
+    const key = wcalYear+'-'+pad(wcalMonth+1)+'-'+pad(d);
+    const isToday = key===todayKey;
+    const w = db.days[key]&&db.days[key].weight&&db.days[key].weight.general;
+    const wVal = w ? parseFloat(w) : null;
+    const cell = document.createElement('div');
+    cell.className='wcal-cell'+(isToday?' is-today':'');
+    cell.innerHTML=`<div class="wcal-num">${d}</div>${wVal!==null?`<div class="wcal-w">${wVal.toFixed(1)}</div>`:''}`;
+    grid.appendChild(cell);
+  }
+  const filled = startDow+last.getDate();
+  const tail = filled%7===0?0:7-(filled%7);
+  for(let d=1;d<=tail;d++){
+    const c=document.createElement('div'); c.className='wcal-cell other-m';
+    c.innerHTML=`<div class="wcal-num" style="color:#ccc">${d}</div>`;
+    grid.appendChild(c);
+  }
 }
 
 window.switchGraph = function(type, btn){
@@ -898,6 +1057,7 @@ function showCalendar(){
   updateInjBar();
   updateDplus();
   loadWeightInputs();
+  renderWeightSummary();
   setTimeout(()=>renderGraph(currentGraphType), 50);
 }
 

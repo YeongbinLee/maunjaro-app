@@ -845,25 +845,46 @@ window.toggleComplete = function(){
 };
 
 // ── Injection banner ──
+const INJ_SITES = ['허벅지 (왼)', '허벅지 (오른)', '복부 (왼)', '복부 (오른)', '팔 뒤 (왼)', '팔 뒤 (오른)'];
+
+function getPrevInjLog(excludeKey){
+  return db.inj.logs.find(l=>l.date!==excludeKey);
+}
+
 function renderInjBanner(key){
   const wrap=document.getElementById('inj-banner');
   if(!isInjDay(key)){wrap.innerHTML='';return;}
   const logged=injLogForDate(key);
   const def=db.inj.dose||'5';
+  const prevLog=getPrevInjLog(key);
+  const prevSiteHtml=prevLog&&prevLog.site
+    ?`<div style="background:#fef9c3;border:1px solid #fde68a;border-radius:8px;padding:7px 10px;font-size:12px;color:#92400e;margin-bottom:10px;">
+        ⚠️ 직전 접종 부위: <strong>${prevLog.site}</strong> — 이번엔 다른 부위를 선택하세요
+      </div>`
+    :'';
   const content=logged
-    ?`<div class="inj-logged">✅ ${logged.dose}mg 접종 완료<button class="btn-sm btn-red-ghost" onclick="deleteInjLog('${key}')">취소</button></div>`
-    :`<div class="inj-log-row">
-        <select class="inp" id="banner-dose" style="flex:1;padding:7px 8px;">
+    ?`<div class="inj-logged">✅ ${logged.dose}mg · ${logged.site||'부위 미기록'} 접종 완료
+        <button class="btn-sm btn-red-ghost" onclick="deleteInjLog('${key}')">취소</button>
+      </div>`
+    :`${prevSiteHtml}
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;">
+        <select class="inp" id="banner-dose" style="flex:1;min-width:100px;padding:7px 8px;">
           ${DOSE_OPTIONS.map(d=>`<option value="${d}"${d===def?' selected':''}>${d}mg</option>`).join('')}
         </select>
-        <button class="btn-sm btn-blue" onclick="logInj('${key}')">접종 완료 기록</button>
-      </div>`;
+        <select class="inp" id="banner-site" style="flex:1;min-width:120px;padding:7px 8px;">
+          <option value="">접종 부위 선택</option>
+          ${INJ_SITES.map(s=>`<option value="${s}">${s}</option>`).join('')}
+        </select>
+      </div>
+      <button class="btn-sm btn-blue" style="width:100%" onclick="logInj('${key}')">접종 완료 기록</button>`;
   wrap.innerHTML=`<div class="inj-banner-wrap"><h3>💉 오늘 접종일</h3>${content}</div>`;
 }
 window.logInj = function(key){
   const dose=document.getElementById('banner-dose')?.value||db.inj.dose||'?';
+  const site=document.getElementById('banner-site')?.value||'';
+  if(!site){alert('접종 부위를 선택해주세요.');return;}
   db.inj.logs=db.inj.logs.filter(l=>l.date!==key);
-  db.inj.logs.unshift({date:key,dose});
+  db.inj.logs.unshift({date:key,dose,site});
   save();renderInjBanner(key);updateInjBar();renderCalendar();
 };
 window.deleteInjLog = function(key){
@@ -909,6 +930,8 @@ function renderCatPanels(key){
   if(dn){dn.oninput=()=>{ensureDay(key);db.days[key].diet.note=dn.value;save();};}
   const en=document.getElementById('exercise-note');
   if(en){en.oninput=()=>{ensureDay(key);db.days[key].exercise.note=en.value;save();};}
+  const sn=document.getElementById('side-note');
+  if(sn){sn.oninput=()=>{ensureDay(key);db.days[key].sideNote=sn.value;save();};}
   loadPhotosForDay(key);
 }
 
@@ -1024,7 +1047,13 @@ function buildExercisePanel(key){
 function buildSimplePanel(key,catKey){
   const items=buildCheckItems(key,catKey);
   const warning=catKey==='side'?`<div class="warn-mini" style="margin-top:10px;">⚠️ 미체크 = 해당 증상 있음. 심각한 증상 발생 시 즉시 의료진에게 연락하세요.</div>`:'';
-  return items+warning;
+  const sideNote=catKey==='side'
+    ?`<div class="note-wrap">
+        <div class="note-label">📝 기타 사항</div>
+        <textarea class="inp" id="side-note" placeholder="부작용 관련 기타 사항을 자유롭게 기록하세요...">${getDayData(key).sideNote||''}</textarea>
+      </div>`
+    :'';
+  return items+warning+sideNote;
 }
 
 // ══════════════════════════════════════════════════════

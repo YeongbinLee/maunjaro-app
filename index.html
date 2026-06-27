@@ -1,0 +1,936 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>마운자로 관리</title>
+<style>
+:root{
+  --primary:#4f6ef7;--primary-light:#eef0ff;
+  --green:#22c55e;--green-light:#f0fdf4;
+  --orange:#f97316;--red:#ef4444;
+  --purple:#8b5cf6;--blue:#3b82f6;
+  --border:#e5e7eb;--text:#111827;--text-sub:#6b7280;
+  --bg:#f3f4f6;--card:#fff;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;}
+input,select,textarea,button{font-family:inherit;}
+
+/* ══ ONBOARDING ══ */
+#v-ob{position:fixed;inset:0;background:linear-gradient(160deg,#4f6ef7,#7c3aed);z-index:999;overflow-y:auto;display:flex;align-items:center;justify-content:center;padding:24px;}
+.ob-card{background:white;border-radius:20px;padding:28px 24px;width:100%;max-width:400px;box-shadow:0 20px 60px rgba(0,0,0,.25);}
+.ob-logo{text-align:center;font-size:48px;margin-bottom:12px;}
+.ob-card h2{text-align:center;font-size:20px;font-weight:700;margin-bottom:6px;}
+.ob-card p{text-align:center;font-size:13px;color:var(--text-sub);margin-bottom:24px;line-height:1.5;}
+.ob-field{margin-bottom:14px;}
+.ob-label{font-size:12px;font-weight:600;color:var(--text-sub);margin-bottom:5px;display:block;}
+.ob-label .req{color:var(--red);}
+.inp{width:100%;border:1.5px solid var(--border);border-radius:10px;padding:10px 12px;font-size:14px;outline:none;color:var(--text);background:white;transition:border .15s;}
+.inp:focus{border-color:var(--primary);}
+select.inp{-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%236b7280'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:32px;}
+.ob-row{display:flex;align-items:center;gap:8px;}
+.ob-row .inp{width:80px;flex-shrink:0;}
+.ob-row span{font-size:13px;color:var(--text-sub);}
+.ob-btn{width:100%;padding:14px;background:linear-gradient(135deg,#4f6ef7,#7c3aed);color:white;border:none;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;margin-top:6px;}
+.ob-skip{text-align:center;margin-top:12px;font-size:12px;color:var(--text-sub);cursor:pointer;text-decoration:underline;}
+
+/* ══ CALENDAR VIEW ══ */
+#v-cal{display:none;}
+.app-hdr{background:linear-gradient(135deg,#4f6ef7,#7c3aed);color:white;padding:20px 16px 14px;display:flex;align-items:center;justify-content:space-between;}
+.app-title{font-size:18px;font-weight:700;}
+.app-sub{font-size:11px;opacity:.8;margin-top:2px;}
+.dplus{background:rgba(255,255,255,.22);border-radius:10px;padding:5px 11px;text-align:center;}
+.dplus .n{font-size:17px;font-weight:800;line-height:1;}
+.dplus .lbl{font-size:9px;opacity:.85;margin-top:1px;}
+.inj-bar{background:white;border-bottom:1px solid var(--border);padding:10px 14px;display:flex;align-items:center;justify-content:space-between;gap:8px;}
+.inj-bar-left .lbl{font-size:10px;color:var(--text-sub);margin-bottom:1px;}
+.inj-bar-left .val{font-size:13px;font-weight:600;}
+.inj-bar-btns{display:flex;gap:6px;flex-shrink:0;}
+.btn-xs{font-size:11px;font-weight:600;padding:6px 11px;border-radius:7px;border:none;cursor:pointer;}
+.btn-xs.primary{background:var(--primary);color:white;}
+.btn-xs.ghost{background:none;border:1px solid var(--border);color:var(--text-sub);}
+.month-nav{display:flex;align-items:center;justify-content:center;gap:20px;padding:13px 16px 7px;background:white;}
+.month-nav button{width:32px;height:32px;border:none;background:var(--bg);border-radius:8px;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+.month-label{font-size:16px;font-weight:700;min-width:110px;text-align:center;}
+.dow-row{display:grid;grid-template-columns:repeat(7,1fr);background:white;padding:0 8px 6px;}
+.dow-cell{text-align:center;font-size:11px;font-weight:600;color:var(--text-sub);}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:1px;background:var(--border);border-top:1px solid var(--border);}
+.cal-cell{background:white;display:flex;flex-direction:column;align-items:center;padding:5px 2px;cursor:pointer;min-height:58px;position:relative;}
+.cal-cell:active{background:var(--bg);}
+.cal-cell.other-m{opacity:.35;pointer-events:none;background:#fafafa;}
+.cal-num{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:500;position:relative;transition:all .12s;}
+/* TODAY = filled blue */
+.cal-num.is-today{background:var(--blue);color:white;font-weight:700;}
+/* INJECTION DAY = stroke only */
+.cal-num.is-inj{border:2.5px solid var(--blue);color:var(--blue);font-weight:700;}
+/* TODAY + INJECTION DAY = filled blue (today wins), add outer ring */
+.cal-num.is-today.is-inj{background:var(--blue);color:white;border:none;box-shadow:0 0 0 2px white,0 0 0 4px var(--blue);}
+/* Past injection day, logged = green ring */
+.inj-done-pip{position:absolute;bottom:-1px;right:-1px;width:11px;height:11px;background:var(--green);border-radius:50%;border:1.5px solid white;display:flex;align-items:center;justify-content:center;font-size:7px;color:white;}
+.comp-dots{display:flex;gap:2px;margin-top:3px;}
+.comp-dot{width:6px;height:6px;border-radius:50%;}
+.day-done-mark{position:absolute;top:2px;right:4px;font-size:9px;color:var(--green);}
+.cal-legend{display:flex;align-items:center;flex-wrap:wrap;gap:8px 14px;padding:8px 14px;background:white;border-top:1px solid var(--border);font-size:10px;color:var(--text-sub);}
+.legend-item{display:flex;align-items:center;gap:4px;}
+.ldot{width:8px;height:8px;border-radius:50%;}
+.settings-wrap{background:white;border-top:1px solid var(--border);}
+.settings-toggle{width:100%;padding:12px 16px;border:none;background:white;display:flex;align-items:center;justify-content:space-between;font-size:13px;font-weight:600;cursor:pointer;color:var(--text);}
+.settings-body{padding:0 16px 16px;}
+.settings-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.field-label{font-size:11px;color:var(--text-sub);margin-bottom:4px;}
+
+/* ══ DAY DETAIL VIEW ══ */
+#v-day{position:fixed;inset:0;transform:translateX(100%);transition:transform .28s cubic-bezier(.25,.46,.45,.94);background:var(--bg);overflow-y:auto;z-index:200;padding-bottom:50px;}
+#v-day.open{transform:translateX(0);}
+.day-hdr{background:linear-gradient(135deg,#4f6ef7,#7c3aed);color:white;padding:14px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:10;}
+.back-btn{width:34px;height:34px;flex-shrink:0;border:none;background:rgba(255,255,255,.2);border-radius:9px;color:white;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+.day-hdr-info{flex:1;min-width:0;}
+.day-title{font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.day-sub{font-size:10px;opacity:.75;margin-top:1px;}
+.day-hdr-right{display:flex;align-items:center;gap:6px;flex-shrink:0;}
+.count-badge{font-size:12px;font-weight:700;background:rgba(255,255,255,.2);border-radius:8px;padding:4px 8px;white-space:nowrap;}
+.complete-btn{font-size:11px;font-weight:700;padding:6px 10px;border-radius:8px;border:none;cursor:pointer;white-space:nowrap;}
+.complete-btn.idle{background:rgba(255,255,255,.15);color:white;border:1.5px solid rgba(255,255,255,.4);}
+.complete-btn.done{background:var(--green);color:white;}
+.complete-btn.edit{background:rgba(255,255,255,.25);color:white;border:1.5px solid rgba(255,255,255,.5);}
+
+/* ══ INJECTION BANNER ══ */
+.inj-banner-wrap{margin:12px 14px 0;background:linear-gradient(135deg,#eff6ff,#dbeafe);border:1px solid #93c5fd;border-radius:12px;padding:12px 14px;}
+.inj-banner-wrap h3{font-size:13px;font-weight:700;color:#1e40af;margin-bottom:8px;}
+.inj-log-row{display:flex;gap:8px;align-items:center;}
+.inj-logged{color:#15803d;font-size:13px;font-weight:600;display:flex;align-items:center;gap:10px;}
+.btn-sm{padding:7px 12px;border-radius:7px;border:none;font-size:12px;font-weight:600;cursor:pointer;}
+.btn-blue{background:var(--blue);color:white;}
+.btn-red-ghost{background:none;border:1px solid #fca5a5;color:var(--red);}
+
+/* ══ PROGRESS BAR ══ */
+.prog-bar-wrap{display:flex;height:4px;margin:10px 14px 0;border-radius:3px;overflow:hidden;gap:2px;}
+.prog-seg{flex:1;height:100%;border-radius:3px;transition:background .3s;}
+
+/* ══ CATEGORY TABS ══ */
+.cat-tabs-row{display:flex;background:white;border-bottom:1px solid var(--border);margin-top:10px;overflow-x:auto;scrollbar-width:none;}
+.cat-tabs-row::-webkit-scrollbar{display:none;}
+.cat-tab{flex:1;min-width:68px;padding:9px 4px 8px;border:none;background:none;font-size:11px;font-weight:500;color:var(--text-sub);cursor:pointer;border-bottom:2px solid transparent;text-align:center;}
+.cat-tab .ti{font-size:15px;display:block;margin-bottom:1px;}
+.cat-tab .tc{font-size:10px;background:var(--border);border-radius:8px;padding:1px 5px;display:inline-block;margin-top:2px;}
+.cat-tab.active{color:var(--primary);border-bottom-color:var(--primary);font-weight:700;}
+.cat-tab.active .tc{background:var(--primary-light);color:var(--primary);}
+
+/* ══ CATEGORY PANELS ══ */
+.cat-panel{display:none;padding:12px 14px 4px;}
+.cat-panel.active{display:block;}
+
+/* ══ MEAL TABS ══ */
+.meal-tabs-row{display:flex;gap:6px;margin-bottom:12px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px;}
+.meal-tabs-row::-webkit-scrollbar{display:none;}
+.meal-tab{flex-shrink:0;padding:6px 13px;border:1.5px solid var(--border);border-radius:20px;background:white;font-size:12px;font-weight:500;cursor:pointer;color:var(--text-sub);transition:all .15s;white-space:nowrap;}
+.meal-tab.active{background:var(--primary);color:white;border-color:var(--primary);font-weight:700;}
+
+/* ══ PHOTO SLOT ══ */
+.photo-slot{width:100%;height:160px;border:2px dashed var(--border);border-radius:12px;display:flex;align-items:center;justify-content:center;cursor:pointer;background:var(--bg);position:relative;overflow:hidden;margin-bottom:14px;transition:border-color .15s;}
+.photo-slot:hover{border-color:var(--primary);}
+.photo-slot.has-photo{border:none;}
+.photo-slot img{width:100%;height:100%;object-fit:cover;position:absolute;inset:0;}
+.photo-slot label{display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;color:var(--text-sub);}
+.photo-slot label input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;}
+.photo-slot label .icon{font-size:28px;}
+.photo-slot label .txt{font-size:12px;font-weight:500;}
+.photo-rm{position:absolute;top:8px;right:8px;width:28px;height:28px;background:rgba(0,0,0,.55);color:white;border:none;border-radius:50%;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:2;}
+
+/* ══ FOOD LOG ══ */
+.macro-section{margin-bottom:10px;background:var(--bg);border-radius:10px;padding:10px 12px;}
+.macro-section-head{font-size:12px;font-weight:700;margin-bottom:7px;display:flex;align-items:center;gap:5px;}
+.food-chips{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:6px;min-height:22px;}
+.food-chip{display:flex;align-items:center;gap:4px;border-radius:20px;padding:3px 9px 3px 10px;font-size:12px;font-weight:500;}
+.food-chip button{background:none;border:none;cursor:pointer;font-size:14px;line-height:1;opacity:.7;padding:0;}
+.food-chip button:hover{opacity:1;}
+.food-add-row{display:flex;gap:6px;}
+.food-inp{flex:1;border:1.5px solid var(--border);border-radius:8px;padding:6px 10px;font-size:12px;outline:none;background:white;}
+.food-inp:focus{border-color:var(--primary);}
+.food-add-btn{padding:6px 11px;border-radius:8px;border:none;font-size:12px;font-weight:700;cursor:pointer;color:white;flex-shrink:0;}
+
+/* ══ CHECKLIST ══ */
+.sec-divider{border:none;border-top:1px solid var(--border);margin:14px -14px;}
+.sec-label{font-size:11px;font-weight:700;color:var(--text-sub);text-transform:uppercase;letter-spacing:.04em;margin-bottom:8px;}
+.check-item{display:flex;align-items:flex-start;gap:10px;padding:8px 6px;border-bottom:1px solid var(--border);cursor:pointer;border-radius:8px;margin:0 -6px;transition:background .1s;}
+.check-item:last-child{border-bottom:none;}
+.check-item:active{background:var(--bg);}
+.cbox{width:20px;height:20px;border:2px solid var(--border);border-radius:6px;flex-shrink:0;margin-top:1px;display:flex;align-items:center;justify-content:center;transition:all .15s;background:white;}
+.check-item.checked .cbox{background:var(--green);border-color:var(--green);}
+.clabel{font-size:13px;line-height:1.45;}
+.csub{font-size:11px;color:var(--text-sub);margin-top:2px;}
+.check-item.checked .clabel{text-decoration:line-through;color:var(--text-sub);}
+
+/* ══ NOTE ══ */
+.note-wrap{margin-top:14px;}
+.note-label{font-size:11px;font-weight:700;color:var(--text-sub);text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px;}
+textarea.inp{resize:vertical;min-height:72px;font-size:13px;line-height:1.5;}
+.warn-mini{background:#fef2f2;border-left:3px solid var(--red);border-radius:0 8px 8px 0;padding:8px 12px;font-size:12px;color:#7f1d1d;line-height:1.5;margin:0 0 12px;}
+</style>
+</head>
+<body>
+
+<!-- ═══════════════ ONBOARDING ═══════════════ -->
+<div id="v-ob">
+  <div class="ob-card">
+    <div class="ob-logo">💉</div>
+    <h2>마운자로 관리 시작</h2>
+    <p>투약 정보를 입력하면 달력에 접종 일정이 자동으로 표시되고, 오늘부터 일별 기록을 시작할 수 있습니다.</p>
+
+    <div class="ob-field">
+      <label class="ob-label">첫 접종일 <span class="req">*</span></label>
+      <input type="date" class="inp" id="ob-start">
+    </div>
+    <div class="ob-field">
+      <label class="ob-label">접종 주기</label>
+      <div class="ob-row">
+        <input type="number" class="inp" id="ob-interval" value="7" min="1" max="30" style="width:72px;">
+        <span>일 (기본: 주 1회)</span>
+      </div>
+    </div>
+    <div class="ob-field">
+      <label class="ob-label">현재 용량 (mg)</label>
+      <select class="inp" id="ob-dose">
+        <option value="">나중에 입력</option>
+        <option value="2.5">2.5 mg — 시작 용량</option>
+        <option value="5">5 mg</option>
+        <option value="7.5">7.5 mg</option>
+        <option value="10">10 mg</option>
+        <option value="12.5">12.5 mg</option>
+        <option value="15">15 mg — 최고 용량</option>
+      </select>
+    </div>
+    <button class="ob-btn" onclick="completeOnboarding()">시작하기 →</button>
+    <div class="ob-skip" onclick="skipOnboarding()">나중에 입력하기</div>
+  </div>
+</div>
+
+<!-- ═══════════════ CALENDAR VIEW ═══════════════ -->
+<div id="v-cal">
+  <div class="app-hdr">
+    <div>
+      <div class="app-title">💉 마운자로 관리</div>
+      <div class="app-sub" id="hdr-date"></div>
+    </div>
+    <div class="dplus" id="dplus-badge" style="display:none">
+      <div class="n" id="dplus-n"></div>
+      <div class="lbl">투약 D+일</div>
+    </div>
+  </div>
+
+  <div class="inj-bar">
+    <div class="inj-bar-left">
+      <div class="lbl">투약 일정</div>
+      <div class="val" id="inj-status">설정을 입력해주세요</div>
+    </div>
+    <div class="inj-bar-btns">
+      <button class="btn-xs primary" onclick="openDay(todayKey)">오늘 기록</button>
+      <button class="btn-xs ghost" onclick="toggleSettings()">⚙️ 설정</button>
+    </div>
+  </div>
+
+  <div style="background:white;">
+    <div class="month-nav">
+      <button onclick="prevMonth()">‹</button>
+      <span class="month-label" id="month-label"></span>
+      <button onclick="nextMonth()">›</button>
+    </div>
+    <div class="dow-row">
+      <div class="dow-cell" style="color:#ef4444">일</div>
+      <div class="dow-cell">월</div><div class="dow-cell">화</div>
+      <div class="dow-cell">수</div><div class="dow-cell">목</div>
+      <div class="dow-cell">금</div>
+      <div class="dow-cell" style="color:#3b82f6">토</div>
+    </div>
+  </div>
+
+  <div class="cal-grid" id="cal-grid"></div>
+
+  <div class="cal-legend">
+    <div class="legend-item">
+      <div style="width:18px;height:18px;border-radius:50%;background:var(--blue);display:inline-block;"></div>
+      <span>오늘</span>
+    </div>
+    <div class="legend-item">
+      <div style="width:18px;height:18px;border-radius:50%;border:2.5px solid var(--blue);display:inline-block;"></div>
+      <span>접종일</span>
+    </div>
+    <div class="legend-item"><div class="ldot" style="background:#22c55e"></div><span>식단완료</span></div>
+    <div class="legend-item"><div class="ldot" style="background:#f97316"></div><span>운동완료</span></div>
+    <div class="legend-item"><div class="ldot" style="background:#ef4444"></div><span>부작용체크</span></div>
+    <div class="legend-item"><div class="ldot" style="background:#8b5cf6"></div><span>심리체크</span></div>
+  </div>
+
+  <div class="settings-wrap">
+    <button class="settings-toggle" onclick="toggleSettings()">
+      <span>⚙️ 투약 설정</span><span id="s-icon">▾</span>
+    </button>
+    <div class="settings-body" id="s-body" style="display:none;">
+      <div class="settings-grid">
+        <div><div class="field-label">첫 접종일</div><input type="date" class="inp" id="s-start" oninput="saveSettings()"></div>
+        <div><div class="field-label">접종 주기 (일)</div><input type="number" class="inp" id="s-interval" value="7" min="1" oninput="saveSettings()"></div>
+        <div><div class="field-label">현재 용량 (mg)</div>
+          <select class="inp" id="s-dose" onchange="saveSettings()">
+            <option value="">선택</option>
+            <option value="2.5">2.5 mg</option><option value="5">5 mg</option>
+            <option value="7.5">7.5 mg</option><option value="10">10 mg</option>
+            <option value="12.5">12.5 mg</option><option value="15">15 mg</option>
+          </select>
+        </div>
+        <div><div class="field-label">총 접종 횟수</div><div class="inp" id="s-count" style="background:var(--bg);color:var(--text-sub);"></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ DAY DETAIL VIEW ═══════════════ -->
+<div id="v-day">
+
+  <div class="day-hdr">
+    <button class="back-btn" onclick="backToCalendar()">←</button>
+    <div class="day-hdr-info">
+      <div class="day-title" id="day-title"></div>
+      <div class="day-sub" id="day-sub"></div>
+    </div>
+    <div class="day-hdr-right">
+      <div class="count-badge" id="count-badge"></div>
+      <button class="complete-btn idle" id="complete-btn" onclick="toggleComplete()">완료하기</button>
+    </div>
+  </div>
+
+  <div id="inj-banner"></div>
+
+  <div class="prog-bar-wrap" id="prog-bar"></div>
+
+  <div class="cat-tabs-row" id="cat-tabs"></div>
+
+  <div id="cat-panels"></div>
+
+</div>
+
+<script>
+// ══════════════════════════════════════════════════════
+// CONSTANTS
+// ══════════════════════════════════════════════════════
+const STORE = 'mj_v5';
+const DOWS = ['일','월','화','수','목','금','토'];
+const DOSE_OPTIONS = ['2.5','5','7.5','10','12.5','15'];
+const MEALS = ['breakfast','lunch','dinner','snack'];
+const MEAL_LABEL = {breakfast:'🌅 아침',lunch:'☀️ 점심',dinner:'🌙 저녁',snack:'🍎 간식'};
+const MACROS = ['carb','prot','fat'];
+const MACRO_LABEL = {carb:'탄수화물 🌾',prot:'단백질 💪',fat:'지방 🥑'};
+const MACRO_COLOR = {carb:'#f97316',prot:'#3b82f6',fat:'#8b5cf6'};
+const MACRO_CHIP_BG = {carb:'#fff7ed',prot:'#eff6ff',fat:'#faf5ff'};
+
+const CATS = {
+  diet:{label:'식단',icon:'🥗',color:'#22c55e',
+    items:[
+      {id:'d1',label:'단백질 충분히 섭취',sub:'체중 1kg당 최소 1g 목표 — 근육 보존 핵심'},
+      {id:'d2',label:'식사 거르지 않기',sub:'배고프지 않아도 소량이라도 섭취'},
+      {id:'d3',label:'물 1.5L 이상 섭취',sub:'오심 시 조금씩 자주'},
+      {id:'d4',label:'고지방·튀긴 음식 자제',sub:'오심 악화 가능성'},
+      {id:'d5',label:'단순 당·탄산음료 자제'},
+      {id:'d6',label:'음주 자제'},
+    ]
+  },
+  exercise:{label:'운동',icon:'🏃',color:'#f97316',
+    items:[
+      {id:'e1',label:'걷기 30분 이상',sub:'식후 산책도 혈당 관리에 효과적'},
+      {id:'e2',label:'근력 운동 실시',sub:'주 2~3회 목표 (근육 손실 방지)'},
+      {id:'e3',label:'운동 전후 수분 보충'},
+      {id:'e4',label:'투약 당일 격렬한 운동 자제',sub:'오심 심하면 가벼운 산책으로 대체'},
+    ]
+  },
+  side:{label:'부작용',icon:'⚠️',color:'#ef4444',
+    items:[
+      {id:'s1',label:'오심(메스꺼움) 없음 ✓'},
+      {id:'s2',label:'구토 없음 ✓'},
+      {id:'s3',label:'설사 없음 ✓'},
+      {id:'s4',label:'변비 없음 ✓',sub:'수분↑ 식이섬유↑, 심하면 의사 상담'},
+      {id:'s5',label:'주사 부위 이상 없음 ✓',sub:'심한 발적·부종·통증 없음'},
+      {id:'s6',label:'응급 증상 없음 ✓',sub:'복통·목 혹·두드러기·호흡 곤란 없음'},
+    ]
+  },
+  mental:{label:'심리',icon:'🧠',color:'#8b5cf6',
+    items:[
+      {id:'m1',label:'음식 기피 습관 주의',sub:'음식 자체를 두려워하지 않기'},
+      {id:'m2',label:'천천히 식사, 포만감에 즉시 중단'},
+      {id:'m3',label:'수면 7시간 이상'},
+      {id:'m4',label:'스트레스 적절히 관리'},
+      {id:'m5',label:'체중에 과도하게 집착하지 않음',sub:'주간 평균으로 추세 파악'},
+    ]
+  }
+};
+const CAT_KEYS = Object.keys(CATS);
+const ALL_IDS = CAT_KEYS.flatMap(k=>CATS[k].items.map(i=>i.id)); // 21
+
+// ══════════════════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════════════════
+let db = {
+  days: {},
+  inj: { startDate:'', intervalDays:7, dose:'', logs:[] }
+};
+let calYear = new Date().getFullYear();
+let calMonth = new Date().getMonth();
+let currentDayKey = null;
+let currentCat = 'diet';
+let currentMeal = 'breakfast';
+let settingsOpen = false;
+
+const todayKey = (()=>{
+  const d=new Date();
+  return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+})();
+function pad(n){return String(n).padStart(2,'0');}
+
+// ══════════════════════════════════════════════════════
+// PERSISTENCE
+// ══════════════════════════════════════════════════════
+function save(){try{localStorage.setItem(STORE,JSON.stringify(db));}catch(e){}}
+function load(){
+  try{
+    const s=localStorage.getItem(STORE);
+    if(s){
+      const p=JSON.parse(s);
+      db.days=p.days||{};
+      if(p.inj){db.inj.startDate=p.inj.startDate||'';db.inj.intervalDays=p.inj.intervalDays||7;db.inj.dose=p.inj.dose||'';db.inj.logs=p.inj.logs||[];}
+    }
+  }catch(e){}
+}
+function ensureDay(key){
+  if(!db.days[key])db.days[key]={checks:{},completed:false,diet:{note:'',meals:{}},exercise:{photo:'',note:''}};
+  const d=db.days[key];
+  if(!d.checks)d.checks={};
+  if(!d.diet)d.diet={note:'',meals:{}};
+  if(!d.diet.meals)d.diet.meals={};
+  if(!d.exercise)d.exercise={photo:'',note:''};
+  MEALS.forEach(m=>{
+    if(!d.diet.meals[m])d.diet.meals[m]={photo:'',foods:{carb:[],prot:[],fat:[]}};
+  });
+}
+function getDayData(key){ensureDay(key);return db.days[key];}
+function getDayChecks(key){return getDayData(key).checks;}
+
+// ══════════════════════════════════════════════════════
+// DATE HELPERS
+// ══════════════════════════════════════════════════════
+function keyToDate(key){return new Date(key+'T00:00:00');}
+function dateToKey(d){return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());}
+function formatLong(key){
+  const d=keyToDate(key);
+  return d.getFullYear()+'년 '+(d.getMonth()+1)+'월 '+d.getDate()+'일 ('+DOWS[d.getDay()]+')';
+}
+
+// ══════════════════════════════════════════════════════
+// INJECTION HELPERS
+// ══════════════════════════════════════════════════════
+function isInjDay(key){
+  if(!db.inj.startDate)return false;
+  const start=keyToDate(db.inj.startDate),d=keyToDate(key);
+  if(d<start)return false;
+  const diff=Math.round((d-start)/86400000);
+  return diff%(Math.max(1,parseInt(db.inj.intervalDays)||7))===0;
+}
+function getNextInj(){
+  if(!db.inj.startDate)return null;
+  const now=new Date();now.setHours(0,0,0,0);
+  const start=keyToDate(db.inj.startDate);
+  const iv=Math.max(1,parseInt(db.inj.intervalDays)||7);
+  if(now<start)return{date:start,daysLeft:Math.round((start-now)/86400000),isToday:false};
+  const diff=Math.round((now-start)/86400000);
+  const rem=diff%iv;
+  if(rem===0)return{date:now,daysLeft:0,isToday:true};
+  const next=new Date(now.getTime()+(iv-rem)*86400000);
+  return{date:next,daysLeft:iv-rem,isToday:false};
+}
+function getDplus(){
+  if(!db.inj.startDate)return null;
+  const start=keyToDate(db.inj.startDate);
+  const now=new Date();now.setHours(0,0,0,0);
+  return Math.round((now-start)/86400000);
+}
+function injLogForDate(key){return db.inj.logs.find(l=>l.date===key);}
+
+// ══════════════════════════════════════════════════════
+// COMPLETION
+// ══════════════════════════════════════════════════════
+function catComp(key,catKey){
+  const ch=getDayChecks(key);
+  return CATS[catKey].items.filter(i=>ch[i.id]).length;
+}
+function dayComp(key){
+  const ch=getDayChecks(key);
+  const done=ALL_IDS.filter(id=>ch[id]).length;
+  return{done,total:ALL_IDS.length};
+}
+
+// ══════════════════════════════════════════════════════
+// ONBOARDING
+// ══════════════════════════════════════════════════════
+function completeOnboarding(){
+  const start=document.getElementById('ob-start').value;
+  if(!start){
+    document.getElementById('ob-start').style.borderColor='var(--red)';
+    document.getElementById('ob-start').focus();
+    return;
+  }
+  db.inj.startDate=start;
+  db.inj.intervalDays=parseInt(document.getElementById('ob-interval').value)||7;
+  db.inj.dose=document.getElementById('ob-dose').value;
+  save();
+  showCalendar();
+}
+function skipOnboarding(){showCalendar();}
+function showCalendar(){
+  document.getElementById('v-ob').style.display='none';
+  document.getElementById('v-cal').style.display='block';
+  restoreSettings();
+  renderCalendar();
+  updateInjBar();
+  updateDplus();
+}
+
+// ══════════════════════════════════════════════════════
+// CALENDAR
+// ══════════════════════════════════════════════════════
+function renderCalendar(){
+  document.getElementById('month-label').textContent=calYear+'년 '+(calMonth+1)+'월';
+  const grid=document.getElementById('cal-grid');
+  grid.innerHTML='';
+  const first=new Date(calYear,calMonth,1);
+  const last=new Date(calYear,calMonth+1,0);
+  const startDow=first.getDay();
+  const prevLast=new Date(calYear,calMonth,0);
+  for(let i=startDow-1;i>=0;i--){
+    const c=document.createElement('div');c.className='cal-cell other-m';
+    c.innerHTML=`<div class="cal-num" style="color:#ccc">${prevLast.getDate()-i}</div>`;grid.appendChild(c);
+  }
+  for(let d=1;d<=last.getDate();d++){
+    const key=calYear+'-'+pad(calMonth+1)+'-'+pad(d);
+    grid.appendChild(makeDayCell(d,key));
+  }
+  const filled=startDow+last.getDate();
+  const tail=filled%7===0?0:7-(filled%7);
+  for(let d=1;d<=tail;d++){
+    const c=document.createElement('div');c.className='cal-cell other-m';
+    c.innerHTML=`<div class="cal-num" style="color:#ccc">${d}</div>`;grid.appendChild(c);
+  }
+}
+
+function makeDayCell(d,key){
+  const cell=document.createElement('div');cell.className='cal-cell';
+  const isToday=key===todayKey;
+  const isInj=isInjDay(key);
+  const injLogged=injLogForDate(key);
+  const comp=dayComp(key);
+  const dayDone=db.days[key]&&db.days[key].completed;
+
+  let numCls='cal-num';
+  if(isToday)numCls+=' is-today';
+  if(isInj)numCls+=' is-inj';
+
+  const dots=CAT_KEYS.map(k=>{
+    const done=catComp(key,k);
+    const total=CATS[k].items.length;
+    const color=done===total?CATS[k].color:done>0?'#d1d5db':'#f3f4f6';
+    return `<div class="comp-dot" style="background:${color}"></div>`;
+  }).join('');
+
+  cell.innerHTML=`
+    ${dayDone?`<div class="day-done-mark">✓</div>`:''}
+    <div class="${numCls}">${d}${injLogged?'<div class="inj-done-pip">✓</div>':''}</div>
+    <div class="comp-dots">${dots}</div>
+  `;
+  cell.onclick=()=>openDay(key);
+  return cell;
+}
+
+function prevMonth(){if(--calMonth<0){calMonth=11;calYear--;}renderCalendar();}
+function nextMonth(){if(++calMonth>11){calMonth=0;calYear++;}renderCalendar();}
+
+// ══════════════════════════════════════════════════════
+// INJ BAR + D+ BADGE
+// ══════════════════════════════════════════════════════
+function updateInjBar(){
+  const el=document.getElementById('inj-status');
+  const cnt=db.inj.logs.length;
+  document.getElementById('s-count').textContent=cnt+'회 완료';
+  if(!db.inj.startDate){el.innerHTML='<span style="color:var(--text-sub);font-size:12px;">⚙️ 아래 설정에서 첫 접종일을 입력해주세요</span>';return;}
+  const info=getNextInj();
+  if(!info)return;
+  const dose=db.inj.dose;
+  const doseTag=dose?`<span style="background:var(--primary-light);color:var(--primary);font-size:10px;font-weight:700;padding:2px 6px;border-radius:8px;margin-left:5px;">${dose}mg</span>`:'';
+  if(info.isToday){
+    const logged=injLogForDate(todayKey);
+    el.innerHTML=logged?`<span style="color:var(--green)">✅ 오늘 ${logged.dose}mg 접종 완료</span>`:`<span style="color:#1d4ed8;font-weight:700">💉 오늘 접종일!</span>${doseTag}`;
+  } else {
+    const ds=(info.date.getMonth()+1)+'월 '+info.date.getDate()+'일';
+    el.innerHTML=`다음 접종: <strong>${ds}</strong> (D-${info.daysLeft})${doseTag}`;
+  }
+}
+function updateDplus(){
+  const dp=getDplus();
+  const badge=document.getElementById('dplus-badge');
+  if(dp===null||dp<0){badge.style.display='none';return;}
+  badge.style.display='block';
+  document.getElementById('dplus-n').textContent='D+'+dp;
+}
+
+// ══════════════════════════════════════════════════════
+// SETTINGS
+// ══════════════════════════════════════════════════════
+function toggleSettings(){
+  settingsOpen=!settingsOpen;
+  document.getElementById('s-body').style.display=settingsOpen?'block':'none';
+  document.getElementById('s-icon').textContent=settingsOpen?'▴':'▾';
+}
+function saveSettings(){
+  db.inj.startDate=document.getElementById('s-start').value;
+  db.inj.intervalDays=parseInt(document.getElementById('s-interval').value)||7;
+  db.inj.dose=document.getElementById('s-dose').value;
+  save();renderCalendar();updateInjBar();updateDplus();
+}
+function restoreSettings(){
+  document.getElementById('s-start').value=db.inj.startDate||'';
+  document.getElementById('s-interval').value=db.inj.intervalDays||7;
+  document.getElementById('s-dose').value=db.inj.dose||'';
+  document.getElementById('s-count').textContent=db.inj.logs.length+'회 완료';
+}
+
+// ══════════════════════════════════════════════════════
+// DAY DETAIL
+// ══════════════════════════════════════════════════════
+function openDay(key){
+  currentDayKey=key;currentCat='diet';currentMeal='breakfast';
+  ensureDay(key);
+  renderDay(key);
+  const el=document.getElementById('v-day');el.classList.add('open');el.scrollTop=0;
+}
+function backToCalendar(){
+  document.getElementById('v-day').classList.remove('open');
+  renderCalendar();updateInjBar();
+}
+function renderDay(key){
+  const isToday=key===todayKey;
+  document.getElementById('day-title').textContent=formatLong(key);
+  const dp=db.inj.startDate?Math.round((keyToDate(key)-keyToDate(db.inj.startDate))/86400000):null;
+  document.getElementById('day-sub').textContent=isToday?'✦ 오늘':dp!==null&&dp>=0?'투약 D+'+dp+'일':'';
+  updateCompBadge(key);
+  renderInjBanner(key);
+  renderProgBar(key);
+  renderCatTabs(key);
+  renderCatPanels(key);
+}
+function updateCompBadge(key){
+  const comp=dayComp(key);
+  document.getElementById('count-badge').textContent=comp.done+'/'+comp.total;
+  const dayData=db.days[key];
+  const btn=document.getElementById('complete-btn');
+  if(dayData&&dayData.completed){
+    btn.textContent='수정하기';
+    btn.className='complete-btn edit';
+  } else {
+    btn.textContent='완료하기';
+    btn.className='complete-btn idle';
+  }
+}
+function toggleComplete(){
+  if(!currentDayKey)return;
+  ensureDay(currentDayKey);
+  db.days[currentDayKey].completed=!db.days[currentDayKey].completed;
+  save();
+  updateCompBadge(currentDayKey);
+  renderCalendar();
+}
+
+// ── Injection banner ──
+function renderInjBanner(key){
+  const wrap=document.getElementById('inj-banner');
+  if(!isInjDay(key)){wrap.innerHTML='';return;}
+  const logged=injLogForDate(key);
+  const def=db.inj.dose||'5';
+  const content=logged
+    ?`<div class="inj-logged">✅ ${logged.dose}mg 접종 완료<button class="btn-sm btn-red-ghost" onclick="deleteInjLog('${key}')">취소</button></div>`
+    :`<div class="inj-log-row">
+        <select class="inp" id="banner-dose" style="flex:1;padding:7px 8px;">
+          ${DOSE_OPTIONS.map(d=>`<option value="${d}"${d===def?' selected':''}>${d}mg</option>`).join('')}
+        </select>
+        <button class="btn-sm btn-blue" onclick="logInj('${key}')">접종 완료 기록</button>
+      </div>`;
+  wrap.innerHTML=`<div class="inj-banner-wrap"><h3>💉 오늘 접종일</h3>${content}</div>`;
+}
+function logInj(key){
+  const dose=document.getElementById('banner-dose')?.value||db.inj.dose||'?';
+  db.inj.logs=db.inj.logs.filter(l=>l.date!==key);
+  db.inj.logs.unshift({date:key,dose});
+  save();renderInjBanner(key);updateInjBar();renderCalendar();
+}
+function deleteInjLog(key){
+  db.inj.logs=db.inj.logs.filter(l=>l.date!==key);
+  save();renderInjBanner(key);updateInjBar();renderCalendar();
+}
+
+// ── Category tabs / panels ──
+function renderProgBar(key){
+  const bar=document.getElementById('prog-bar');
+  bar.innerHTML=CAT_KEYS.map(k=>{
+    const done=catComp(key,k),total=CATS[k].items.length;
+    const pct=Math.round(done/total*100);
+    const color=pct===100?CATS[k].color:pct>0?CATS[k].color+'88':'var(--border)';
+    return `<div class="prog-seg" style="background:${color}"></div>`;
+  }).join('');
+}
+function renderCatTabs(key){
+  document.getElementById('cat-tabs').innerHTML=CAT_KEYS.map(k=>{
+    const done=catComp(key,k),total=CATS[k].items.length;
+    return `<button class="cat-tab${k===currentCat?' active':''}" onclick="switchCat('${k}','${key}')">
+      <span class="ti">${CATS[k].icon}</span>${CATS[k].label}<span class="tc">${done}/${total}</span>
+    </button>`;
+  }).join('');
+}
+function switchCat(catKey,dayKey){
+  currentCat=catKey;
+  renderCatTabs(dayKey);
+  document.querySelectorAll('.cat-panel').forEach(p=>p.classList.remove('active'));
+  const panel=document.getElementById('panel-'+catKey);
+  if(panel)panel.classList.add('active');
+}
+function renderCatPanels(key){
+  const panels=document.getElementById('cat-panels');
+  panels.innerHTML=CAT_KEYS.map(k=>{
+    let html='';
+    if(k==='diet') html=buildDietPanel(key);
+    else if(k==='exercise') html=buildExercisePanel(key);
+    else html=buildSimplePanel(key,k);
+    return `<div class="cat-panel${k===currentCat?' active':''}" id="panel-${k}">${html}</div>`;
+  }).join('');
+  // set up note listeners
+  const dn=document.getElementById('diet-note');
+  if(dn){dn.oninput=()=>{ensureDay(key);db.days[key].diet.note=dn.value;save();};}
+  const en=document.getElementById('exercise-note');
+  if(en){en.oninput=()=>{ensureDay(key);db.days[key].exercise.note=en.value;save();};}
+}
+
+// ══════════════════════════════════════════════════════
+// DIET PANEL
+// ══════════════════════════════════════════════════════
+function buildDietPanel(key){
+  const dayDiet=getDayData(key).diet;
+  const mealTabsHtml=MEALS.map(m=>`<button class="meal-tab${m===currentMeal?' active':''}" onclick="switchMeal('${key}','${m}')">${MEAL_LABEL[m]}</button>`).join('');
+  const mealHtml=buildMealContent(key,currentMeal);
+  const checks=buildCheckItems(key,'diet');
+  const note=dayDiet.note||'';
+  return `
+    <div class="meal-tabs-row">${mealTabsHtml}</div>
+    <div id="meal-content">${mealHtml}</div>
+    <hr class="sec-divider">
+    <div class="sec-label">체크리스트</div>
+    ${checks}
+    <div class="note-wrap">
+      <div class="note-label">📝 오늘의 메모</div>
+      <textarea class="inp" id="diet-note" placeholder="오늘 식단에 대해 자유롭게 기록하세요...">${note}</textarea>
+    </div>
+  `;
+}
+function buildMealContent(key,meal){
+  ensureDay(key);
+  const mealData=db.days[key].diet.meals[meal];
+  const photo=mealData.photo||'';
+  const photoHtml=photo
+    ?`<div class="photo-slot has-photo"><img src="${photo}" alt="${meal}"><button class="photo-rm" onclick="removePhoto('${key}','diet-${meal}')">×</button></div>`
+    :`<div class="photo-slot"><label><input type="file" accept="image/*" onchange="handlePhoto(this,'${key}','diet-${meal}')"><span class="icon">📷</span><span class="txt">${MEAL_LABEL[meal]} 사진 추가</span></label></div>`;
+  const foodHtml=MACROS.map(cat=>buildFoodSection(key,meal,cat)).join('');
+  return photoHtml+foodHtml;
+}
+function buildFoodSection(key,meal,cat){
+  ensureDay(key);
+  const foods=db.days[key].diet.meals[meal].foods[cat]||[];
+  const chips=foods.map((f,i)=>`<span class="food-chip" style="background:${MACRO_CHIP_BG[cat]};border:1px solid ${MACRO_COLOR[cat]}33;color:${MACRO_COLOR[cat]};">
+    ${f}<button onclick="removeFood('${key}','${meal}','${cat}',${i})" style="color:${MACRO_COLOR[cat]}">×</button>
+  </span>`).join('');
+  return `<div class="macro-section">
+    <div class="macro-section-head" style="color:${MACRO_COLOR[cat]};">${MACRO_LABEL[cat]}</div>
+    <div class="food-chips" id="chips-${key}-${meal}-${cat}">${chips||'<span style="font-size:12px;color:#ccc">아직 없음</span>'}</div>
+    <div class="food-add-row">
+      <input class="food-inp" id="fi-${key}-${meal}-${cat}" placeholder="${cat==='carb'?'밥, 빵, 과일...':cat==='prot'?'닭가슴살, 두부, 계란...':'아보카도, 견과류...'}"
+        onkeydown="if(event.key==='Enter'){event.preventDefault();addFoodFromInput('${key}','${meal}','${cat}');}">
+      <button class="food-add-btn" style="background:${MACRO_COLOR[cat]};" onclick="addFoodFromInput('${key}','${meal}','${cat}')">+</button>
+    </div>
+  </div>`;
+}
+function switchMeal(key,meal){
+  currentMeal=meal;
+  document.querySelectorAll('.meal-tab').forEach(t=>t.classList.remove('active'));
+  const tabs=document.querySelectorAll('.meal-tab');
+  const idx=MEALS.indexOf(meal);
+  if(tabs[idx])tabs[idx].classList.add('active');
+  document.getElementById('meal-content').innerHTML=buildMealContent(key,meal);
+}
+function addFoodFromInput(key,meal,cat){
+  const inp=document.getElementById(`fi-${key}-${meal}-${cat}`);
+  if(!inp)return;
+  const val=inp.value.trim();
+  if(!val)return;
+  ensureDay(key);
+  if(!db.days[key].diet.meals[meal].foods[cat])db.days[key].diet.meals[meal].foods[cat]=[];
+  db.days[key].diet.meals[meal].foods[cat].push(val);
+  save();
+  inp.value='';
+  refreshFoodChips(key,meal,cat);
+}
+function removeFood(key,meal,cat,idx){
+  ensureDay(key);
+  const arr=db.days[key].diet.meals[meal].foods[cat]||[];
+  arr.splice(idx,1);
+  db.days[key].diet.meals[meal].foods[cat]=arr;
+  save();
+  refreshFoodChips(key,meal,cat);
+}
+function refreshFoodChips(key,meal,cat){
+  const container=document.getElementById(`chips-${key}-${meal}-${cat}`);
+  if(!container)return;
+  const foods=db.days[key].diet.meals[meal].foods[cat]||[];
+  if(foods.length===0){container.innerHTML='<span style="font-size:12px;color:#ccc">아직 없음</span>';return;}
+  container.innerHTML=foods.map((f,i)=>`<span class="food-chip" style="background:${MACRO_CHIP_BG[cat]};border:1px solid ${MACRO_COLOR[cat]}33;color:${MACRO_COLOR[cat]};">
+    ${f}<button onclick="removeFood('${key}','${meal}','${cat}',${i})" style="color:${MACRO_COLOR[cat]}">×</button>
+  </span>`).join('');
+}
+
+// ══════════════════════════════════════════════════════
+// EXERCISE PANEL
+// ══════════════════════════════════════════════════════
+function buildExercisePanel(key){
+  const exData=getDayData(key).exercise;
+  const photo=exData.photo||'';
+  const photoHtml=photo
+    ?`<div class="photo-slot has-photo"><img src="${photo}" alt="exercise"><button class="photo-rm" onclick="removePhoto('${key}','exercise')">×</button></div>`
+    :`<div class="photo-slot"><label><input type="file" accept="image/*" onchange="handlePhoto(this,'${key}','exercise')"><span class="icon">📷</span><span class="txt">운동 사진 인증</span></label></div>`;
+  const checks=buildCheckItems(key,'exercise');
+  const note=exData.note||'';
+  return `
+    ${photoHtml}
+    <div class="sec-label">체크리스트</div>
+    ${checks}
+    <div class="note-wrap">
+      <div class="note-label">📝 오늘의 메모</div>
+      <textarea class="inp" id="exercise-note" placeholder="오늘 운동에 대해 자유롭게 기록하세요...">${note}</textarea>
+    </div>
+  `;
+}
+
+// ══════════════════════════════════════════════════════
+// SIDE / MENTAL PANEL (no change)
+// ══════════════════════════════════════════════════════
+function buildSimplePanel(key,catKey){
+  const items=buildCheckItems(key,catKey);
+  const warning=catKey==='side'?`<div class="warn-mini" style="margin-top:10px;">⚠️ 미체크 = 해당 증상 있음. 심각한 증상 발생 시 즉시 의료진에게 연락하세요.</div>`:'';
+  return items+warning;
+}
+
+// ══════════════════════════════════════════════════════
+// CHECK ITEMS
+// ══════════════════════════════════════════════════════
+function buildCheckItems(key,catKey){
+  const ch=getDayChecks(key);
+  return CATS[catKey].items.map(item=>{
+    const checked=!!ch[item.id];
+    return `<div class="check-item${checked?' checked':''}" onclick="toggleCheck(this,'${key}','${catKey}','${item.id}')">
+      <div class="cbox">${checked?'<svg width="11" height="8" viewBox="0 0 11 8"><path d="M1 3.5L4 6.5L10 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>':''}</div>
+      <div><div class="clabel">${item.label}</div>${item.sub?`<div class="csub">${item.sub}</div>`:''}</div>
+    </div>`;
+  }).join('');
+}
+function toggleCheck(el,key,catKey,itemId){
+  ensureDay(key);
+  const newVal=!db.days[key].checks[itemId];
+  db.days[key].checks[itemId]=newVal;
+  save();
+  el.classList.toggle('checked',newVal);
+  const cbox=el.querySelector('.cbox');
+  if(cbox)cbox.innerHTML=newVal?'<svg width="11" height="8" viewBox="0 0 11 8"><path d="M1 3.5L4 6.5L10 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>':'';
+  updateCompBadge(key);
+  renderCatTabs(key);
+  renderProgBar(key);
+  // restore active tab
+  document.querySelectorAll('.cat-panel').forEach(p=>p.classList.remove('active'));
+  const panel=document.getElementById('panel-'+catKey);
+  if(panel)panel.classList.add('active');
+}
+
+// ══════════════════════════════════════════════════════
+// PHOTO UPLOAD
+// ══════════════════════════════════════════════════════
+function handlePhoto(input,key,slot){
+  const file=input.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=function(e){
+    const img=new Image();
+    img.onload=function(){
+      const canvas=document.createElement('canvas');
+      const MAX=400;let w=img.width,h=img.height;
+      if(w>h){if(w>MAX){h=h*(MAX/w);w=MAX;}}else{if(h>MAX){w=w*(MAX/h);h=MAX;}}
+      canvas.width=w;canvas.height=h;
+      canvas.getContext('2d').drawImage(img,0,0,w,h);
+      const dataUrl=canvas.toDataURL('image/jpeg',.6);
+      savePhoto(key,slot,dataUrl);
+    };
+    img.src=e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+function savePhoto(key,slot,dataUrl){
+  ensureDay(key);
+  if(slot==='exercise'){
+    db.days[key].exercise.photo=dataUrl;
+  } else {
+    const meal=slot.replace('diet-','');
+    db.days[key].diet.meals[meal].photo=dataUrl;
+  }
+  try{save();}catch(e){alert('저장 공간 부족으로 사진을 저장하지 못했습니다.');}
+  // Re-render the current slot
+  if(slot==='exercise'){
+    const panel=document.getElementById('panel-exercise');
+    if(panel){panel.innerHTML=buildExercisePanel(key);const en=document.getElementById('exercise-note');if(en){en.oninput=()=>{ensureDay(key);db.days[key].exercise.note=en.value;save();};}}
+  } else {
+    document.getElementById('meal-content').innerHTML=buildMealContent(key,slot.replace('diet-',''));
+  }
+}
+function removePhoto(key,slot){
+  ensureDay(key);
+  if(slot==='exercise'){db.days[key].exercise.photo='';}
+  else{const meal=slot.replace('diet-','');db.days[key].diet.meals[meal].photo='';}
+  save();savePhoto._rerender=true;
+  if(slot==='exercise'){
+    const panel=document.getElementById('panel-exercise');
+    if(panel){panel.innerHTML=buildExercisePanel(key);const en=document.getElementById('exercise-note');if(en){en.oninput=()=>{ensureDay(key);db.days[key].exercise.note=en.value;save();};}}
+  } else {
+    document.getElementById('meal-content').innerHTML=buildMealContent(key,slot.replace('diet-',''));
+  }
+}
+
+// ══════════════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════════════
+function init(){
+  load();
+  const today=new Date();
+  document.getElementById('hdr-date').textContent=today.getFullYear()+'년 '+(today.getMonth()+1)+'월 '+today.getDate()+'일 ('+DOWS[today.getDay()]+')';
+
+  if(db.inj.startDate){
+    // Already set up → go straight to calendar
+    document.getElementById('v-ob').style.display='none';
+    document.getElementById('v-cal').style.display='block';
+    restoreSettings();
+    renderCalendar();
+    updateInjBar();
+    updateDplus();
+  }
+  // else: onboarding is shown (default state)
+}
+
+init();
+</script>
+</body>
+</html>

@@ -184,6 +184,29 @@ textarea.inp{resize:vertical;min-height:72px;font-size:13px;line-height:1.5;}
 .backup-btn:active{background:var(--bg);}
 .backup-btn.export{background:var(--primary-light);border-color:var(--primary);color:var(--primary);}
 
+/* ══ BODY SECTION (메인 카드) ══ */
+.body-section{background:white;border-radius:14px;margin:12px 14px 0;padding:14px;box-shadow:0 1px 4px rgba(0,0,0,.06);}
+.body-section-title{font-size:13px;font-weight:700;color:var(--text);margin-bottom:12px;display:flex;align-items:center;gap:6px;}
+.weight-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;}
+.weight-field label{font-size:11px;color:var(--text-sub);font-weight:600;display:block;margin-bottom:4px;}
+.weight-inp-row{display:flex;align-items:center;gap:4px;}
+.weight-inp-row input{flex:1;border:1.5px solid var(--border);border-radius:8px;padding:8px 10px;font-size:14px;font-weight:600;outline:none;color:var(--text);background:white;width:100%;}
+.weight-inp-row input:focus{border-color:var(--primary);}
+.weight-inp-row span{font-size:12px;color:var(--text-sub);flex-shrink:0;}
+.weight-save-btn{width:100%;padding:10px;background:var(--primary);color:white;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;margin-top:4px;}
+.weight-save-btn:active{opacity:.85;}
+.inbody-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;}
+
+/* ══ GRAPH ══ */
+.graph-section{background:white;border-radius:14px;margin:12px 14px 0;padding:14px;box-shadow:0 1px 4px rgba(0,0,0,.06);}
+.graph-title{font-size:13px;font-weight:700;color:var(--text);margin-bottom:4px;display:flex;align-items:center;gap:6px;}
+.graph-tabs{display:flex;gap:6px;margin-bottom:12px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px;}
+.graph-tabs::-webkit-scrollbar{display:none;}
+.graph-tab{flex-shrink:0;padding:5px 12px;border:1.5px solid var(--border);border-radius:20px;background:white;font-size:11px;font-weight:600;cursor:pointer;color:var(--text-sub);transition:all .15s;}
+.graph-tab.active{background:var(--primary);color:white;border-color:var(--primary);}
+.graph-canvas-wrap{position:relative;width:100%;height:180px;}
+.graph-empty{text-align:center;padding:40px 0;font-size:13px;color:var(--text-sub);}
+
 /* ══ LOADING ══ */
 #v-loading{position:fixed;inset:0;background:linear-gradient(160deg,#4f6ef7,#7c3aed);z-index:2000;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px;color:white;}
 #v-loading .spin{width:36px;height:36px;border:3px solid rgba(255,255,255,.3);border-top-color:white;border-radius:50%;animation:spin .8s linear infinite;}
@@ -314,6 +337,59 @@ textarea.inp{resize:vertical;min-height:72px;font-size:13px;line-height:1.5;}
     <div class="legend-item"><div class="ldot" style="background:#f97316"></div><span>운동완료</span></div>
     <div class="legend-item"><div class="ldot" style="background:#ef4444"></div><span>부작용체크</span></div>
     <div class="legend-item"><div class="ldot" style="background:#8b5cf6"></div><span>심리체크</span></div>
+  </div>
+
+  <!-- 체중 입력 -->
+  <div class="body-section">
+    <div class="body-section-title">⚖️ 오늘 체중 기록</div>
+    <div class="weight-grid">
+      <div class="weight-field">
+        <label>일반 체중</label>
+        <div class="weight-inp-row">
+          <input type="number" id="w-general" placeholder="0.0" step="0.1" min="0" max="300">
+          <span>kg</span>
+        </div>
+      </div>
+    </div>
+    <div class="body-section-title" style="margin-top:10px;margin-bottom:8px;">📊 인바디 (선택)</div>
+    <div class="inbody-grid">
+      <div class="weight-field">
+        <label>체중</label>
+        <div class="weight-inp-row">
+          <input type="number" id="w-inbody" placeholder="0.0" step="0.1" min="0" max="300">
+          <span>kg</span>
+        </div>
+      </div>
+      <div class="weight-field">
+        <label>골격근량</label>
+        <div class="weight-inp-row">
+          <input type="number" id="w-muscle" placeholder="0.0" step="0.1" min="0" max="200">
+          <span>kg</span>
+        </div>
+      </div>
+      <div class="weight-field">
+        <label>체지방량</label>
+        <div class="weight-inp-row">
+          <input type="number" id="w-fat" placeholder="0.0" step="0.1" min="0" max="200">
+          <span>kg</span>
+        </div>
+      </div>
+    </div>
+    <button class="weight-save-btn" onclick="saveWeightToday()">저장</button>
+  </div>
+
+  <!-- 신체변화 그래프 -->
+  <div class="graph-section">
+    <div class="graph-title">📈 신체변화 그래프</div>
+    <div class="graph-tabs">
+      <button class="graph-tab active" onclick="switchGraph('general',this)">일반 체중</button>
+      <button class="graph-tab" onclick="switchGraph('inbody',this)">인바디 체중</button>
+      <button class="graph-tab" onclick="switchGraph('muscle',this)">골격근량</button>
+      <button class="graph-tab" onclick="switchGraph('fat',this)">체지방량</button>
+    </div>
+    <div class="graph-canvas-wrap">
+      <canvas id="body-graph"></canvas>
+    </div>
   </div>
 
   <div class="settings-wrap">
@@ -572,6 +648,7 @@ function ensureDay(key){
   if(!d.diet) d.diet={note:'',meals:{}};
   if(!d.diet.meals) d.diet.meals={};
   if(!d.exercise) d.exercise={photo:'',note:''};
+  if(!d.weight) d.weight={general:'',inbody:'',muscle:'',fat:''};
   MEALS.forEach(m=>{
     if(!d.diet.meals[m]) d.diet.meals[m]={photo:'',foods:{carb:[],prot:[],fat:[]}};
   });
@@ -669,6 +746,132 @@ function dayComp(key){
 }
 
 // ══════════════════════════════════════════════════════
+// WEIGHT
+// ══════════════════════════════════════════════════════
+let currentGraphType = 'general';
+
+window.saveWeightToday = function(){
+  const general = document.getElementById('w-general').value.trim();
+  const inbody  = document.getElementById('w-inbody').value.trim();
+  const muscle  = document.getElementById('w-muscle').value.trim();
+  const fat     = document.getElementById('w-fat').value.trim();
+  if(!general && !inbody && !muscle && !fat){ alert('체중 값을 하나 이상 입력해주세요.'); return; }
+  ensureDay(todayKey);
+  db.days[todayKey].weight = { general, inbody, muscle, fat };
+  save();
+  renderGraph(currentGraphType);
+  // 저장 피드백
+  const btn = document.getElementById('w-save-feedback');
+  if(btn){ btn.textContent='✅ 저장됨'; setTimeout(()=>{ btn.textContent='저장'; },1500); }
+};
+
+function loadWeightInputs(){
+  ensureDay(todayKey);
+  const w = db.days[todayKey].weight || {};
+  document.getElementById('w-general').value = w.general || '';
+  document.getElementById('w-inbody').value  = w.inbody  || '';
+  document.getElementById('w-muscle').value  = w.muscle  || '';
+  document.getElementById('w-fat').value     = w.fat     || '';
+}
+
+window.switchGraph = function(type, btn){
+  currentGraphType = type;
+  document.querySelectorAll('.graph-tab').forEach(t=>t.classList.remove('active'));
+  btn.classList.add('active');
+  renderGraph(type);
+};
+
+function renderGraph(type){
+  const canvas = document.getElementById('body-graph');
+  if(!canvas) return;
+
+  // 데이터 수집 — weight 필드가 있는 날만, 날짜순 정렬
+  const entries = Object.entries(db.days)
+    .filter(([,d])=> d.weight && d.weight[type] !== '' && d.weight[type] != null)
+    .map(([key,d])=>({ key, val: parseFloat(d.weight[type]) }))
+    .filter(e=>!isNaN(e.val))
+    .sort((a,b)=>a.key.localeCompare(b.key));
+
+  const wrap = canvas.parentElement;
+  if(entries.length < 2){
+    canvas.style.display='none';
+    let empty = wrap.querySelector('.graph-empty');
+    if(!empty){ empty=document.createElement('div'); empty.className='graph-empty'; wrap.appendChild(empty); }
+    empty.textContent = entries.length===0 ? '아직 기록이 없습니다.' : '그래프를 표시하려면 2개 이상의 기록이 필요합니다.';
+    return;
+  }
+  canvas.style.display='block';
+  const old = wrap.querySelector('.graph-empty');
+  if(old) old.remove();
+
+  const W = wrap.clientWidth || 320;
+  const H = 180;
+  const PAD = { top:16, right:16, bottom:36, left:44 };
+  canvas.width  = W;
+  canvas.height = H;
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0,0,W,H);
+
+  const vals = entries.map(e=>e.val);
+  const minV = Math.floor(Math.min(...vals) - 1);
+  const maxV = Math.ceil(Math.max(...vals)  + 1);
+  const rangeV = maxV - minV || 1;
+
+  const gW = W - PAD.left - PAD.right;
+  const gH = H - PAD.top  - PAD.bottom;
+
+  function xOf(i){ return PAD.left + (i/(entries.length-1))*gW; }
+  function yOf(v){ return PAD.top  + (1-(v-minV)/rangeV)*gH; }
+
+  // 격자선 + Y 라벨
+  ctx.strokeStyle='#e5e7eb'; ctx.lineWidth=1;
+  const steps=4;
+  for(let i=0;i<=steps;i++){
+    const v = minV + (rangeV/steps)*i;
+    const y = yOf(v);
+    ctx.beginPath(); ctx.moveTo(PAD.left,y); ctx.lineTo(W-PAD.right,y); ctx.stroke();
+    ctx.fillStyle='#9ca3af'; ctx.font='10px -apple-system,sans-serif'; ctx.textAlign='right';
+    ctx.fillText(v.toFixed(1), PAD.left-4, y+3);
+  }
+
+  // 선
+  const COLOR = {general:'#4f6ef7',inbody:'#3b82f6',muscle:'#22c55e',fat:'#f97316'}[type]||'#4f6ef7';
+  ctx.strokeStyle=COLOR; ctx.lineWidth=2.5; ctx.lineJoin='round'; ctx.lineCap='round';
+  ctx.beginPath();
+  entries.forEach((e,i)=>{ i===0?ctx.moveTo(xOf(i),yOf(e.val)):ctx.lineTo(xOf(i),yOf(e.val)); });
+  ctx.stroke();
+
+  // 채우기
+  ctx.beginPath();
+  entries.forEach((e,i)=>{ i===0?ctx.moveTo(xOf(i),yOf(e.val)):ctx.lineTo(xOf(i),yOf(e.val)); });
+  ctx.lineTo(xOf(entries.length-1), PAD.top+gH);
+  ctx.lineTo(xOf(0), PAD.top+gH);
+  ctx.closePath();
+  ctx.fillStyle=COLOR+'22'; ctx.fill();
+
+  // 점 + X 라벨 (날짜)
+  entries.forEach((e,i)=>{
+    const x=xOf(i), y=yOf(e.val);
+    ctx.beginPath(); ctx.arc(x,y,4,0,Math.PI*2);
+    ctx.fillStyle='white'; ctx.fill();
+    ctx.strokeStyle=COLOR; ctx.lineWidth=2; ctx.stroke();
+
+    // 날짜 라벨 — 너무 많으면 간격 조절
+    const skip = entries.length>10 ? Math.ceil(entries.length/8) : 1;
+    if(i%skip===0 || i===entries.length-1){
+      const parts = e.key.split('-');
+      const label = (parts[1]||'').replace(/^0/,'')+'/'+(parts[2]||'').replace(/^0/,'');
+      ctx.fillStyle='#6b7280'; ctx.font='9px -apple-system,sans-serif'; ctx.textAlign='center';
+      ctx.fillText(label, x, H-PAD.bottom+14);
+    }
+
+    // 값 라벨
+    ctx.fillStyle=COLOR; ctx.font='bold 10px -apple-system,sans-serif'; ctx.textAlign='center';
+    ctx.fillText(e.val.toFixed(1), x, y-8);
+  });
+}
+
+// ══════════════════════════════════════════════════════
 // ONBOARDING
 // ══════════════════════════════════════════════════════
 window.completeOnboarding = function(){
@@ -694,6 +897,8 @@ function showCalendar(){
   renderCalendar();
   updateInjBar();
   updateDplus();
+  loadWeightInputs();
+  setTimeout(()=>renderGraph(currentGraphType), 50);
 }
 
 // ══════════════════════════════════════════════════════
@@ -845,7 +1050,7 @@ window.toggleComplete = function(){
 };
 
 // ── Injection banner ──
-const INJ_SITES = ['허벅지 (왼)', '허벅지 (오른)', '복부 (왼)', '복부 (오른)', '팔 뒤 (왼)', '팔 뒤 (오른)'];
+const INJ_SITES = ['허벅지', '복부', '팔 뒤'];
 
 function getPrevInjLog(excludeKey){
   return db.inj.logs.find(l=>l.date!==excludeKey);

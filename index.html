@@ -1526,15 +1526,18 @@ async function savePhotoAndRender(key,slot,dataUrl){
   if(slot==='exercise') db.days[key].exercise.photo=true;
   else db.days[key].diet.meals[slot.replace('diet-','')].photo=true;
   save();
+  // 먼저 UI 교체 후 dataUrl로 즉시 미리보기
+  rerenderPhotoSlot(key, slot);
+  const imgEl = document.getElementById('pi-'+slot);
+  if(imgEl) imgEl.src = dataUrl;
   try {
-    await savePhotoStorage(key,slot,dataUrl);
-    rerenderPhotoSlot(key,slot,dataUrl);
+    await savePhotoStorage(key, slot, dataUrl);
   } catch(e){
     console.error('사진 저장 오류:', e);
-    // 저장 실패 시 photo 플래그 되돌리기
     if(slot==='exercise') db.days[key].exercise.photo=false;
     else db.days[key].diet.meals[slot.replace('diet-','')].photo=false;
     save();
+    rerenderPhotoSlot(key, slot);
     alert('사진 저장 실패: ' + (e.code||e.message) + '\n\nFirebase Storage 규칙을 확인해주세요.');
   }
 }
@@ -1544,23 +1547,23 @@ window.removePhoto = async function(key,slot){
   if(slot==='exercise') db.days[key].exercise.photo=false;
   else db.days[key].diet.meals[slot.replace('diet-','')].photo=false;
   save();
-  await deletePhotoStorage(key,slot);
-  rerenderPhotoSlot(key,slot,null);
+  // UI 먼저 즉시 교체
+  rerenderPhotoSlot(key, slot);
+  // Storage 삭제는 백그라운드
+  deletePhotoStorage(key, slot).catch(e=>console.error('사진 삭제 오류:', e));
 };
 
-function rerenderPhotoSlot(key,slot,dataUrl){
+function rerenderPhotoSlot(key, slot){
   if(slot==='exercise'){
     const panel=document.getElementById('panel-exercise');
     if(!panel)return;
     panel.innerHTML=buildExercisePanel(key);
     const en=document.getElementById('exercise-note');
     if(en){en.oninput=()=>{ensureDay(key);db.days[key].exercise.note=en.value;save();};}
-    if(dataUrl){const img=document.getElementById('pi-exercise');if(img)img.src=dataUrl;}
   } else {
     const mc=document.getElementById('meal-content');
     if(!mc)return;
-    mc.innerHTML=buildMealContent(key,slot.replace('diet-',''));
-    if(dataUrl){const img=document.getElementById('pi-'+slot);if(img)img.src=dataUrl;}
+    mc.innerHTML=buildMealContent(key, slot.replace('diet-',''));
   }
 }
 

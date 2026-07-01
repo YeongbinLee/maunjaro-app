@@ -527,10 +527,8 @@ textarea.inp{resize:vertical;min-height:72px;font-size:13px;line-height:1.5;}
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged }
   from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
-import { getFirestore, doc, getDoc, setDoc, updateDoc }
+import { getFirestore, doc, getDoc, setDoc, deleteField }
   from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
-import { getStorage, ref, uploadString, getDownloadURL, deleteObject }
-  from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js';
 
 // ══════════════════════════════════════════════════════
 // FIREBASE INIT
@@ -546,7 +544,6 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const firestore = getFirestore(app);
-const storage = getStorage(app);
 
 // ══════════════════════════════════════════════════════
 // CONSTANTS
@@ -737,29 +734,28 @@ function getDayData(key){ensureDay(key);return db.days[key];}
 function getDayChecks(key){return getDayData(key).checks;}
 
 // ══════════════════════════════════════════════════════
-// FIREBASE STORAGE (PHOTOS)
+// FIRESTORE PHOTOS
 // ══════════════════════════════════════════════════════
-function photoStoragePath(key, slot){
-  return `photos/${currentUser.uid}/${key}_${slot}`;
+// 사진은 photos/{uid}/{key}_{slot} 문서에 {data: base64} 형태로 저장
+function photoDocRef(key, slot){
+  return doc(firestore, 'photos', currentUser.uid + '_' + key + '_' + slot);
 }
 
 async function savePhotoStorage(key, slot, dataUrl){
-  const r = ref(storage, photoStoragePath(key, slot));
-  await uploadString(r, dataUrl, 'data_url');
-  return await getDownloadURL(r);
+  await setDoc(photoDocRef(key, slot), { data: dataUrl, uid: currentUser.uid });
 }
 
 async function deletePhotoStorage(key, slot){
   try {
-    const r = ref(storage, photoStoragePath(key, slot));
-    await deleteObject(r);
-  } catch(e){ /* 없으면 무시 */ }
+    await setDoc(photoDocRef(key, slot), { data: null, uid: currentUser.uid });
+  } catch(e){ /* 무시 */ }
 }
 
 async function getPhotoURL(key, slot){
   try {
-    const r = ref(storage, photoStoragePath(key, slot));
-    return await getDownloadURL(r);
+    const snap = await getDoc(photoDocRef(key, slot));
+    if(snap.exists() && snap.data().data) return snap.data().data;
+    return null;
   } catch(e){ return null; }
 }
 
@@ -1512,11 +1508,11 @@ window.handlePhoto = function(input,key,slot){
     const img=new Image();
     img.onload=function(){
       const canvas=document.createElement('canvas');
-      const MAX=800;let w=img.width,h=img.height;
+      const MAX=600;let w=img.width,h=img.height;
       if(w>h){if(w>MAX){h=h*(MAX/w);w=MAX;}}else{if(h>MAX){w=w*(MAX/h);h=MAX;}}
       canvas.width=w;canvas.height=h;
       canvas.getContext('2d').drawImage(img,0,0,w,h);
-      const dataUrl=canvas.toDataURL('image/jpeg',.75);
+      const dataUrl=canvas.toDataURL('image/jpeg',.55);
       savePhotoAndRender(key,slot,dataUrl);
     };
     img.src=e.target.result;
